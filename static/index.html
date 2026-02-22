@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Smart Attendance</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})()</script>
+<style>
+[data-theme="dark"]{
+  --bg:#080d16;--surface:#0f1829;--surface2:#162035;--surface3:#1c2a42;
+  --border:#1e2f4a;--border2:#243654;--text:#e2e8f0;--text2:#94a3b8;--text3:#4a6080;
+  --card-shadow:0 4px 24px rgba(0,0,0,.4);--overlay-bg:rgba(0,0,0,.75);
+}
+[data-theme="light"]{
+  --bg:#f0f4ff;--surface:#ffffff;--surface2:#f1f5fb;--surface3:#e8eef8;
+  --border:#d1dbe8;--border2:#b8c8df;--text:#1a2234;--text2:#4a6080;--text3:#94a3b8;
+  --card-shadow:0 4px 24px rgba(0,0,0,.08);--overlay-bg:rgba(20,40,80,.65);
+}
+:root{
+  --accent:#3b82f6;--accent2:#6366f1;--accentg:linear-gradient(135deg,#3b82f6,#6366f1);
+  --green:#10b981;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--cyan:#06b6d4;
+  --radius:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;transition:background .25s,color .25s}
+
+/* ── THEME TOGGLE ── */
+.theme-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border);background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .2s;flex-shrink:0}
+.theme-btn:hover{border-color:var(--accent)}
+
+/* ── AUTH ── */
+#auth{min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse 80% 60% at 15% 50%,rgba(59,130,246,.08) 0,transparent 55%),
+             radial-gradient(ellipse 50% 40% at 85% 20%,rgba(99,102,241,.06) 0,transparent 50%),var(--bg);
+  padding:20px;transition:background .25s}
+.auth-wrap{width:100%;max-width:420px}
+.auth-brand{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.auth-icon{width:46px;height:46px;background:var(--accentg);border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.auth-brand h1{font-family:'Syne',sans-serif;font-size:23px;font-weight:800;color:var(--text)}
+.auth-brand h1 span{color:var(--accent)}
+.auth-sub{color:var(--text2);font-size:13px;margin-bottom:26px}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:34px;box-shadow:var(--card-shadow)}
+
+/* ── FORMS ── */
+.field{margin-bottom:13px}
+.field label{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em}
+.field input,.field select{width:100%;padding:10px 13px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:all .2s}
+.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.12)}
+.field select option{background:var(--surface2)}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;padding:10px 18px;border-radius:9px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all .18s;white-space:nowrap;text-decoration:none}
+.btn-primary{background:var(--accentg);color:#fff}
+.btn-primary:hover{opacity:.9;transform:translateY(-1px);box-shadow:0 8px 20px rgba(59,130,246,.3)}
+.btn-full{width:100%;padding:13px;font-size:15px}
+.btn-sm{padding:7px 14px;font-size:12px}
+.btn-xs{padding:4px 10px;font-size:11px;border-radius:7px}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);background:rgba(59,130,246,.06)}
+.btn-green{background:rgba(16,185,129,.14);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.btn-green:hover{background:rgba(16,185,129,.24)}
+.btn-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.25)}
+.btn-red:hover{background:rgba(239,68,68,.2)}
+.btn-amber{background:rgba(245,158,11,.12);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.btn-ghost{background:transparent;color:var(--text2)}
+.btn-ghost:hover{background:var(--surface2)}
+.w-full{width:100%}
+
+/* ── APP SHELL ── */
+#app{display:none;min-height:100vh}
+#app.show{display:flex}
+.sidebar{width:222px;min-height:100vh;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;transition:background .25s,border-color .25s}
+.sb-logo{display:flex;align-items:center;gap:10px;padding:17px 15px;border-bottom:1px solid var(--border)}
+.sb-logo-icon{width:32px;height:32px;background:var(--accentg);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
+.sb-logo-text{font-family:'Syne',sans-serif;font-size:14px;font-weight:800;color:var(--text)}
+.sb-logo-text span{color:var(--accent)}
+.sb-user{padding:14px 15px;border-bottom:1px solid var(--border)}
+.sb-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;margin-bottom:8px}
+.sb-name{font-size:13px;font-weight:600;color:var(--text);line-height:1.2}
+.sb-role{margin-top:4px}
+.role-pill{display:inline-flex;padding:2px 9px;border-radius:20px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.role-pill.admin{background:rgba(139,92,246,.2);color:#c4b5fd}
+.role-pill.faculty{background:rgba(59,130,246,.2);color:#93c5fd}
+.role-pill.student{background:rgba(16,185,129,.2);color:#6ee7b7}
+.sb-nav{flex:1;padding:10px}
+.sb-section{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--text3);padding:8px 8px 4px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:8px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;transition:all .15s;margin-bottom:2px;user-select:none}
+.nav-item:hover{background:var(--surface2);color:var(--text)}
+.nav-item.active{background:rgba(59,130,246,.15);color:var(--accent);font-weight:600}
+.nav-item .ni{width:17px;font-size:14px;text-align:center;flex-shrink:0}
+.sb-footer{padding:11px;border-top:1px solid var(--border);display:flex;gap:6px;align-items:center}
+.main{flex:1;display:flex;flex-direction:column;min-width:0}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:13px 26px;border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:0;z-index:10;transition:background .25s}
+.topbar-title{font-family:'Syne',sans-serif;font-size:16px;font-weight:800;color:var(--text)}
+.topbar-right{display:flex;align-items:center;gap:8px}
+.content{flex:1;padding:26px;overflow-y:auto;transition:background .25s}
+.page{display:none}
+.page.active{display:block;animation:fadeIn .2s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.page-header{margin-bottom:22px;display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.page-header-left h2{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--text)}
+.page-header-left p{color:var(--text2);font-size:13px;margin-top:3px}
+
+/* ── STATS ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(145px,1fr));gap:13px;margin-bottom:22px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:17px;transition:all .2s}
+.stat-card:hover{border-color:var(--border2);transform:translateY(-1px);box-shadow:var(--card-shadow)}
+.stat-icon{font-size:20px;margin-bottom:9px}
+.stat-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--text2);margin-bottom:5px}
+.stat-val{font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:var(--text)}
+.stat-sub{font-size:11px;color:var(--text2);margin-top:2px}
+
+/* ── CARD ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:17px;transition:background .25s,border-color .25s}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border)}
+.card-title{font-family:'Syne',sans-serif;font-size:14px;font-weight:700;color:var(--text)}
+.card-body{padding:18px}
+
+/* ── TABLE ── */
+.table-wrap{overflow-x:auto;border-radius:var(--radius);border:1px solid var(--border)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text2);background:var(--surface2);padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(59,130,246,.03)}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;text-transform:uppercase;white-space:nowrap}
+.badge-blue{background:rgba(59,130,246,.15);color:#3b82f6}
+.badge-green{background:rgba(16,185,129,.15);color:#10b981}
+.badge-amber{background:rgba(245,158,11,.15);color:#d97706}
+.badge-red{background:rgba(239,68,68,.12);color:#ef4444}
+.badge-purple{background:rgba(139,92,246,.15);color:#8b5cf6}
+.badge-cyan{background:rgba(6,182,212,.12);color:#06b6d4}
+
+/* ── MODAL ── */
+.overlay{display:none;position:fixed;inset:0;background:var(--overlay-bg);backdrop-filter:blur(5px);z-index:1000;align-items:center;justify-content:center;padding:20px}
+.overlay.open{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:26px;width:100%;max-width:500px;max-height:90vh;overflow-y:auto;box-shadow:0 40px 100px rgba(0,0,0,.5);animation:slideUp .22s ease}
+.modal-lg{max-width:680px}
+@keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+.modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.modal-title{font-family:'Syne',sans-serif;font-size:17px;font-weight:800;color:var(--text)}
+.modal-close{background:none;border:none;color:var(--text2);cursor:pointer;font-size:19px;padding:4px 7px;border-radius:7px}
+.modal-close:hover{background:var(--surface2);color:var(--text)}
+.modal-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:20px;padding-top:16px;border-top:1px solid var(--border)}
+
+/* ── DAY TABS ── */
+.day-tabs{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:17px}
+.day-tab{padding:7px 15px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text2);transition:all .15s;user-select:none}
+.day-tab.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.day-tab:hover:not(.active){border-color:var(--border2);color:var(--text)}
+
+/* ── ATTENDANCE UI ── */
+.att-toolbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:13px 15px;background:var(--surface2);border-radius:10px;margin-bottom:13px;border:1px solid var(--border)}
+.att-counter{display:flex;gap:14px;font-size:13px;font-weight:600}
+.att-counter .p{color:var(--green)}.att-counter .a{color:var(--red)}
+.att-row{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:var(--surface);transition:border-color .15s,background .15s}
+.att-row.present{border-color:rgba(16,185,129,.4);background:rgba(16,185,129,.04)}
+.att-row.absent{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.04)}
+.att-avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#fff;flex-shrink:0}
+.att-toggle{display:flex;border-radius:8px;overflow:hidden;border:1px solid var(--border);flex-shrink:0}
+.att-btn{padding:7px 14px;font-size:12px;font-weight:700;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;background:var(--surface2);color:var(--text2)}
+.att-btn.p.on{background:var(--green);color:#fff}
+.att-btn.a.on{background:var(--red);color:#fff}
+.att-done{background:rgba(59,130,246,.06);border:1px solid rgba(59,130,246,.18);border-radius:9px;padding:11px 14px;margin-bottom:12px;font-size:13px;color:var(--text);display:none}
+
+/* ── ATTENDANCE BARS ── */
+.att-bar-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:10px;border:1px solid var(--border);margin-bottom:7px;background:var(--surface)}
+.att-bar-label{font-weight:600;font-size:13px;min-width:140px;color:var(--text)}
+.att-bar-wrap{flex:1;height:8px;border-radius:99px;background:var(--surface2);overflow:hidden}
+.att-bar{height:100%;border-radius:99px;transition:width .8s ease}
+.att-bar.green{background:var(--green)}.att-bar.amber{background:var(--amber)}.att-bar.red{background:var(--red)}
+.att-bar-pct{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;min-width:38px;text-align:right;color:var(--text)}
+.att-warning{background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-left:4px solid var(--red);border-radius:10px;padding:13px 15px;margin-bottom:14px;display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--text)}
+.att-good{background:rgba(16,185,129,.05);border:1px solid rgba(16,185,129,.18);border-left:4px solid var(--green);border-radius:10px;padding:12px 15px;margin-bottom:13px;font-size:13px;color:var(--text)}
+
+/* ── AI PATTERN ── */
+.pattern-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:10px;border-left:4px solid var(--amber);transition:all .2s}
+.pattern-card.high{border-left-color:var(--red)}
+.pattern-card:hover{border-color:var(--border2);box-shadow:var(--card-shadow)}
+.pattern-top{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pattern-streak{font-family:'Syne',sans-serif;font-size:22px;font-weight:800}
+.pattern-streak.high{color:var(--red)}.pattern-streak.med{color:var(--amber)}
+
+/* ── SLOT CARD ── */
+.slot-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:17px;margin-bottom:10px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:14px}
+.slot-card:hover{border-color:var(--accent);transform:translateY(-1px);box-shadow:var(--card-shadow)}
+.slot-time{text-align:center;min-width:58px;flex-shrink:0}
+.slot-time-main{font-size:13px;font-weight:700;color:var(--accent)}
+.slot-time-end{font-size:10px;color:var(--text2);margin-top:2px}
+.slot-bar{width:3px;height:38px;border-radius:3px;flex-shrink:0;background:var(--accent)}
+.slot-info{flex:1;min-width:0}
+.slot-subject{font-weight:700;font-size:13px;color:var(--text)}
+.slot-meta{font-size:11px;color:var(--text2);margin-top:3px}
+
+/* ── NOTIF ── */
+.notif-wrap{position:relative}
+.notif-panel{position:absolute;top:50px;right:0;width:330px;background:var(--surface);border:1px solid var(--border);border-radius:14px;box-shadow:var(--card-shadow);z-index:200;animation:slideUp .18s ease;overflow:hidden;display:none}
+.notif-panel.open{display:block}
+.notif-ph{padding:13px 15px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.notif-ph h3{font-size:13px;font-weight:700;color:var(--text)}
+.notif-item{padding:11px 15px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;display:flex;gap:8px;align-items:flex-start}
+.notif-item:hover{background:var(--surface2)}
+.notif-item.unread{background:rgba(59,130,246,.04)}
+.notif-item:last-child{border-bottom:none}
+.notif-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px}
+.notif-title{font-size:12px;font-weight:600;margin-bottom:3px;color:var(--text)}
+.notif-msg{font-size:11px;color:var(--text2);line-height:1.4}
+.notif-time{font-size:10px;color:var(--text3);margin-top:3px}
+.notif-empty{padding:26px;text-align:center;color:var(--text2);font-size:13px}
+#notif-count{position:absolute;top:-4px;right:-4px;background:var(--red);color:#fff;border-radius:50%;width:16px;height:16px;font-size:9px;display:none;align-items:center;justify-content:center;font-weight:700}
+
+/* ── MISC ── */
+.empty-state{text-align:center;padding:44px 20px;color:var(--text2)}
+.empty-state .esi{font-size:40px;margin-bottom:12px;opacity:.4}
+.empty-state h3{font-size:15px;font-weight:600;color:var(--text);margin-bottom:4px}
+.spinner{width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{display:flex;justify-content:center;padding:40px}
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* ── TOAST ── */
+#toast-ct{position:fixed;bottom:22px;right:22px;z-index:9999;display:flex;flex-direction:column;gap:7px}
+.toast{display:flex;align-items:flex-start;gap:9px;padding:11px 15px;border-radius:11px;box-shadow:0 8px 30px rgba(0,0,0,.3);animation:toastIn .25s ease;max-width:310px;font-size:13px;border:1px solid transparent}
+[data-theme="dark"] .t-success{background:#0d2b1f;border-color:rgba(16,185,129,.3);color:#6ee7b7}
+[data-theme="dark"] .t-error{background:#2b0d0d;border-color:rgba(239,68,68,.3);color:#fca5a5}
+[data-theme="dark"] .t-info{background:#0d1b2b;border-color:rgba(59,130,246,.3);color:#93c5fd}
+[data-theme="dark"] .t-warning{background:#2b1f0d;border-color:rgba(245,158,11,.3);color:#fcd34d}
+[data-theme="light"] .t-success{background:#ecfdf5;border-color:rgba(16,185,129,.4);color:#065f46}
+[data-theme="light"] .t-error{background:#fef2f2;border-color:rgba(239,68,68,.4);color:#991b1b}
+[data-theme="light"] .t-info{background:#eff6ff;border-color:rgba(59,130,246,.4);color:#1e40af}
+[data-theme="light"] .t-warning{background:#fffbeb;border-color:rgba(245,158,11,.4);color:#92400e}
+@keyframes toastIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+</style>
+</head>
+<body>
+
+<!-- ════ AUTH ════ -->
+<div id="auth">
+  <div class="auth-wrap">
+    <div class="auth-brand">
+      <div class="auth-icon">📋</div>
+      <h1>Smart<span>Attendance</span></h1>
+      <button class="theme-btn" onclick="toggleTheme()" style="margin-left:auto" title="Toggle theme">🌙</button>
+    </div>
+    <p class="auth-sub">Intelligent Attendance Management — LPU Campus</p>
+    <div class="auth-card">
+      <div class="field"><label>Email</label>
+        <input id="login-email" type="email" placeholder="your@college.edu" value="ali@student.edu"/>
+      </div>
+      <div class="field"><label>Password</label>
+        <input id="login-pass" type="password" placeholder="••••••••" value="student123"
+          onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="doLogin()">Sign In →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ APP ════ -->
+<div id="app">
+  <nav class="sidebar">
+    <div class="sb-logo">
+      <div class="sb-logo-icon">📋</div>
+      <div class="sb-logo-text">Smart<span>Attendance</span></div>
+    </div>
+    <div class="sb-user">
+      <div class="sb-avatar" id="sb-av"></div>
+      <div class="sb-name" id="sb-name"></div>
+      <div class="sb-role"><span class="role-pill" id="sb-role"></span></div>
+    </div>
+    <div class="sb-nav" id="sb-nav"></div>
+    <div class="sb-footer">
+      <button class="theme-btn" onclick="toggleTheme()" id="sb-theme-btn" title="Toggle theme">🌙</button>
+      <button class="btn btn-outline btn-sm w-full" onclick="logout()">🚪 Sign Out</button>
+    </div>
+  </nav>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbar-title">Dashboard</div>
+      <div class="topbar-right">
+        <div class="notif-wrap">
+          <button class="btn btn-ghost btn-sm" onclick="toggleNotif()" style="font-size:17px;position:relative;padding:8px">
+            🔔<span id="notif-count"></span>
+          </button>
+          <div class="notif-panel" id="notif-panel">
+            <div class="notif-ph">
+              <h3>🔔 Notifications</h3>
+              <button class="btn btn-xs btn-outline" onclick="readAllNotifs()">Mark all read</button>
+            </div>
+            <div id="notif-list"></div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2)" id="topbar-date"></div>
+      </div>
+    </div>
+    <div class="content">
+      <div id="page-dashboard"   class="page"></div>
+      <div id="page-schedule"    class="page"></div>
+      <div id="page-attendance"  class="page"></div>
+      <div id="page-my-att"      class="page"></div>
+      <div id="page-ai"          class="page"></div>
+      <div id="page-students"    class="page"></div>
+      <div id="page-faculty"     class="page"></div>
+      <div id="page-subjects"    class="page"></div>
+      <div id="page-parent-log"  class="page"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Attendance Modal -->
+<div class="overlay" id="ov-att">
+  <div class="modal modal-lg">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="att-title">📋 Take Attendance</div>
+        <div style="font-size:11px;color:var(--text2);margin-top:2px" id="att-sub"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal('ov-att')">✕</button>
+    </div>
+    <div class="att-done" id="att-done">✅ Attendance already submitted for this session.</div>
+    <div class="att-toolbar">
+      <div class="att-counter">
+        <span class="p">✅ Present: <strong id="att-p-count">0</strong></span>
+        <span style="color:var(--border2)">|</span>
+        <span class="a">❌ Absent: <strong id="att-a-count">0</strong></span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-green btn-sm" onclick="markAll('present')">✅ Mark All Present</button>
+        <button class="btn btn-red btn-sm"   onclick="markAll('absent')">❌ Mark All Absent</button>
+      </div>
+    </div>
+    <div id="att-list" style="max-height:380px;overflow-y:auto;padding-right:2px"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal('ov-att')">Close</button>
+      <button class="btn btn-primary" id="att-submit-btn" onclick="submitAttendance()">Submit Attendance</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-ct"></div>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+let USER = null, activeDay = todayName(), attSlotId = null, attDate = null,
+    attRecords = {}, attDone = false;
+
+// ── utils ──────────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: {'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  if (!r.ok) { const e = await r.json().catch(()=>({detail:'Request failed'})); throw new Error(e.detail||'Error'); }
+  return r.json();
+}
+function toast(msg, type='info') {
+  const icons = {success:'✅',error:'❌',info:'ℹ️',warning:'⚠️'};
+  const d = document.createElement('div');
+  d.className = `toast t-${type}`;
+  d.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
+  $('toast-ct').appendChild(d);
+  setTimeout(() => d.remove(), 4500);
+}
+function openModal(id)  { $(id).classList.add('open') }
+function closeModal(id) { $(id).classList.remove('open') }
+function todayName() { return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()]; }
+function todayStr()  { return new Date().toISOString().split('T')[0]; }
+function timeLabel(t) {
+  if (!t) return '';
+  const [h, m] = t.split(':');
+  const hr = +h, ap = hr >= 12 ? 'PM' : 'AM', h12 = hr % 12 || 12;
+  return `${h12}:${m} ${ap}`;
+}
+function fmtDate(iso) { if (!iso) return ''; return new Date(iso).toLocaleString(); }
+function initials(name) { return name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase(); }
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.notif-wrap')) $('notif-panel').classList.remove('open');
+});
+
+// ── theme ──────────────────────────────────────────────────────────────────
+let theme = localStorage.getItem('theme') || 'dark';
+function applyTheme() {
+  document.documentElement.setAttribute('data-theme', theme);
+  const icon = theme === 'dark' ? '☀️' : '🌙';
+  document.querySelectorAll('.theme-btn').forEach(b => b.textContent = icon);
+}
+function toggleTheme() {
+  theme = theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem('theme', theme);
+  applyTheme();
+}
+applyTheme();
+
+// ── auth ──────────────────────────────────────────────────────────────────
+async function doLogin() {
+  try {
+    USER = await api('POST', '/api/login', {
+      email: $('login-email').value.trim(),
+      password: $('login-pass').value,
+    });
+    startApp();
+  } catch(e) { toast(e.message, 'error'); }
+}
+function logout() {
+  USER = null;
+  $('app').classList.remove('show');
+  $('auth').style.display = 'flex';
+}
+
+// ── app start ─────────────────────────────────────────────────────────────
+function startApp() {
+  $('auth').style.display = 'none';
+  $('app').classList.add('show');
+  $('sb-av').style.background = USER.avatar_color;
+  $('sb-av').textContent = initials(USER.name);
+  $('sb-name').textContent = USER.name;
+  const rp = $('sb-role'); rp.textContent = USER.role; rp.className = `role-pill ${USER.role}`;
+  $('topbar-date').textContent = new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});
+  applyTheme();
+  buildNav();
+  loadNotifications();
+  navigateTo('dashboard');
+  setInterval(loadNotifications, 30000);
+}
+
+function buildNav() {
+  const r = USER.role;
+  let h = '<div class="sb-section">Main</div>';
+  h += ni('dashboard','📊','Dashboard');
+  if (r === 'student') {
+    h += ni('schedule','📅','My Schedule');
+    h += ni('my-att','📊','My Attendance');
+  }
+  if (r === 'faculty') {
+    h += ni('schedule','📅','My Schedule');
+    h += ni('attendance','📋','Take Attendance');
+    h += ni('ai','🤖','AI Patterns');
+  }
+  if (r === 'admin') {
+    h += ni('schedule','📅','All Schedules');
+    h += ni('attendance','📊','Attendance Report');
+    h += ni('ai','🤖','AI Patterns');
+    h += ni('parent-log','👪','Parent Alerts');
+    h += '<div class="sb-section" style="margin-top:8px">Management</div>';
+    h += ni('students','🎓','Students');
+    h += ni('faculty','👨‍🏫','Faculty');
+    h += ni('subjects','📚','Subjects');
+  }
+  $('sb-nav').innerHTML = h;
+}
+function ni(page, icon, label) {
+  return `<div class="nav-item" id="nav-${page}" onclick="navigateTo('${page}')">
+    <span class="ni">${icon}</span><span>${label}</span>
+  </div>`;
+}
+const PAGE_TITLES = {
+  dashboard:'Dashboard', schedule:'Schedule', attendance:'Attendance',
+  'my-att':'My Attendance', ai:'AI Pattern Detection', students:'Students',
+  faculty:'Faculty', subjects:'Subjects', 'parent-log':'Parent Alerts'
+};
+async function navigateTo(page) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const ni = $(`nav-${page}`); if (ni) ni.classList.add('active');
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  $(`page-${page}`).classList.add('active');
+  $('topbar-title').textContent = PAGE_TITLES[page] || page;
+  if      (page==='dashboard')  await renderDashboard();
+  else if (page==='schedule')   await renderSchedule();
+  else if (page==='attendance') await renderAttendancePage();
+  else if (page==='my-att')     await renderMyAtt();
+  else if (page==='ai')         await renderAI();
+  else if (page==='students')   await renderStudents();
+  else if (page==='faculty')    await renderFaculty();
+  else if (page==='subjects')   await renderSubjects();
+  else if (page==='parent-log') await renderParentLog();
+}
+
+// ── notifications ─────────────────────────────────────────────────────────
+async function loadNotifications() {
+  try {
+    const notifs = await api('GET', `/api/notifications?user_id=${USER.id}&role=${USER.role}`);
+    const unread = notifs.filter(n => !n.is_read).length;
+    const cnt = $('notif-count');
+    cnt.style.display = unread > 0 ? 'flex' : 'none';
+    cnt.textContent = unread > 9 ? '9+' : unread;
+    const list = $('notif-list');
+    if (!notifs.length) { list.innerHTML = '<div class="notif-empty">No notifications 🎉</div>'; return; }
+    list.innerHTML = notifs.map(n => `
+      <div class="notif-item ${n.is_read?'':'unread'}" onclick="readNotif(${n.id})">
+        ${!n.is_read ? '<div class="notif-dot"></div>' : '<div style="width:6px"></div>'}
+        <div style="flex:1">
+          <div class="notif-title">${n.title}</div>
+          <div class="notif-msg">${n.message}</div>
+          <div class="notif-time">${fmtDate(n.created_at)}</div>
+        </div>
+      </div>`).join('');
+  } catch {}
+}
+function toggleNotif() { $('notif-panel').classList.toggle('open'); }
+async function readNotif(id) {
+  await api('POST', `/api/notifications/${id}/read`).catch(()=>{});
+  loadNotifications();
+}
+async function readAllNotifs() {
+  await api('POST', `/api/notifications/read-all?user_id=${USER.id}&role=${USER.role}`).catch(()=>{});
+  loadNotifications();
+  $('notif-panel').classList.remove('open');
+}
+
+// ── DASHBOARD ─────────────────────────────────────────────────────────────
+async function renderDashboard() {
+  const el = $('page-dashboard');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const stats = await api('GET', `/api/dashboard?user_id=${USER.id}&role=${USER.role}`);
+    const hour = new Date().getHours();
+    const greeting = hour < 12 ? 'Morning' : hour < 17 ? 'Afternoon' : 'Evening';
+    let cards = '', extra = '';
+
+    if (USER.role === 'admin') {
+      cards = `
+        <div class="stat-card"><div class="stat-icon">🎓</div><div class="stat-label">Students</div><div class="stat-val">${stats.total_students}</div></div>
+        <div class="stat-card"><div class="stat-icon">👨‍🏫</div><div class="stat-label">Faculty</div><div class="stat-val">${stats.total_faculty}</div></div>
+        <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-label">Subjects</div><div class="stat-val">${stats.total_subjects}</div></div>
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Sessions</div><div class="stat-val">${stats.total_sessions}</div></div>
+        <div class="stat-card"><div class="stat-icon">📝</div><div class="stat-label">Records</div><div class="stat-val">${stats.total_records}</div></div>
+        <div class="stat-card"><div class="stat-icon">🔔</div><div class="stat-label">Alerts</div><div class="stat-val" style="color:var(--accent)">${stats.unread_notifications}</div></div>`;
+      try {
+        const ov = await api('GET', '/api/attendance/admin/overview');
+        extra = `<div class="card"><div class="card-header"><div class="card-title">📊 Quick Overview</div>
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('attendance')">Full Report →</button></div>
+          <div class="card-body">
+            <div style="display:flex;gap:20px;margin-bottom:16px;flex-wrap:wrap">
+              <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--green)">${ov.overall_percentage}%</div><div style="font-size:12px;color:var(--text2)">Overall Attendance</div></div>
+              <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--green)">${ov.total_present}</div><div style="font-size:12px;color:var(--text2)">Present Records</div></div>
+              <div style="text-align:center"><div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:var(--red)">${ov.total_absent}</div><div style="font-size:12px;color:var(--text2)">Absent Records</div></div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.06em">Students Below 75%</div>
+            ${ov.students.filter(s=>s.percentage<75).slice(0,4).map(s=>`
+              <div class="att-bar-row">
+                <div style="min-width:110px"><div style="font-weight:600;font-size:12px">${s.name}</div><div style="font-size:10px;color:var(--text2)">${s.student_no}</div></div>
+                <div class="att-bar-wrap"><div class="att-bar ${s.color}" style="width:${s.percentage}%"></div></div>
+                <div class="att-bar-pct" style="color:var(--${s.color==='green'?'green':s.color==='amber'?'amber':'red'})">${s.percentage}%</div>
+              </div>`).join('') || '<p style="font-size:13px;color:var(--text2)">All students above 75% ✅</p>'}
+          </div></div>`;
+      } catch {}
+    } else if (USER.role === 'faculty') {
+      cards = `
+        <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-label">My Subjects</div><div class="stat-val">${stats.my_subjects}</div></div>
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Sessions Taken</div><div class="stat-val">${stats.sessions_taken}</div></div>
+        <div class="stat-card"><div class="stat-icon">🔔</div><div class="stat-label">Alerts</div><div class="stat-val" style="color:var(--accent)">${stats.unread_notifications}</div></div>`;
+      try {
+        const hist = await api('GET', `/api/attendance/faculty/${USER.id}`);
+        extra = `<div class="card"><div class="card-header"><div class="card-title">📋 Recent Sessions</div>
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('attendance')">Take Attendance →</button></div>
+          <div class="card-body">
+            ${!hist.length ? '<div class="empty-state" style="padding:20px"><div class="esi">📋</div><p>No sessions taken yet</p></div>' : `
+            <div class="table-wrap"><table><thead><tr><th>Subject</th><th>Date</th><th>Present</th><th>Absent</th><th>Rate</th></tr></thead><tbody>
+            ${hist.slice(0,5).map(r=>`<tr>
+              <td><strong>${r.subject}</strong><br><span style="font-size:10px;color:var(--text2)">${r.code}</span></td>
+              <td>${r.date}<br><span style="font-size:10px;color:var(--text2)">${timeLabel(r.time)}</span></td>
+              <td style="color:var(--green);font-weight:700">${r.total_present}</td>
+              <td style="color:var(--red);font-weight:700">${r.total_absent}</td>
+              <td><span class="badge badge-${r.percentage>=75?'green':r.percentage>=60?'amber':'red'}">${r.percentage}%</span></td>
+            </tr>`).join('')}
+            </tbody></table></div>`}
+          </div></div>`;
+      } catch {}
+    } else {
+      const pct = stats.overall_percentage;
+      const col = pct >= 75 ? 'var(--green)' : pct >= 60 ? 'var(--amber)' : 'var(--red)';
+      cards = `
+        <div class="stat-card"><div class="stat-icon">📅</div><div class="stat-label">Classes Attended</div><div class="stat-val">${stats.total_classes}</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Present</div><div class="stat-val" style="color:var(--green)">${stats.total_present}</div></div>
+        <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-label">Absent</div><div class="stat-val" style="color:var(--red)">${stats.total_absent}</div></div>
+        <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Overall</div><div class="stat-val" style="color:${col}">${pct}%</div></div>`;
+      try {
+        const attData = await api('GET', `/api/attendance/student/${USER.id}`);
+        const low = attData.filter(s => s.percentage < 75);
+        extra = `${low.length ? `<div class="att-warning"><span style="font-size:18px;flex-shrink:0">🚨</span><div><strong>Low attendance in ${low.length} subject(s):</strong> ${low.map(s=>s.subject).join(', ')}. Minimum required is 75%.</div></div>` : '<div class="att-good">✅ Great! You are above 75% in all subjects.</div>'}
+        <div class="card"><div class="card-header"><div class="card-title">📊 Subject Attendance</div>
+          <button class="btn btn-outline btn-sm" onclick="navigateTo('my-att')">Full Report →</button></div>
+          <div class="card-body">
+            ${attData.slice(0,4).map(s=>`<div class="att-bar-row">
+              <div class="att-bar-label">${s.subject}</div>
+              <div class="att-bar-wrap"><div class="att-bar ${s.color}" style="width:${s.percentage}%"></div></div>
+              <div class="att-bar-pct" style="color:var(--${s.color==='green'?'green':s.color==='amber'?'amber':'red'})">${s.percentage}%</div>
+            </div>`).join('')}
+          </div></div>`;
+      } catch {}
+    }
+    el.innerHTML = `
+      <div class="page-header"><div class="page-header-left">
+        <h2>Good ${greeting}, ${USER.name.split(' ')[0]} 👋</h2>
+        <p>${todayName()} · ${new Date().toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'})}</p>
+      </div></div>
+      <div class="stats-grid">${cards}</div>
+      ${extra}`;
+  } catch(e) { el.innerHTML = `<div class="empty-state"><div class="esi">⚠️</div><h3>Failed to load</h3><p>${e.message}</p></div>`; }
+}
+
+// ── SCHEDULE ──────────────────────────────────────────────────────────────
+async function renderSchedule() {
+  const el = $('page-schedule');
+  const isFac = USER.role === 'faculty';
+  const isAdmin = USER.role === 'admin';
+  el.innerHTML = `<div class="page-header"><div class="page-header-left">
+    <h2>${USER.role==='student'?'My Schedule':'Teaching Schedule'}</h2>
+    <p>Weekly class timetable</p></div></div>
+    <div class="day-tabs" id="sched-tabs"></div>
+    <div id="sched-content"></div>`;
+  buildDayTabs('sched-tabs', 'loadSchedSlots');
+  await loadSchedSlots();
+}
+function buildDayTabs(containerId, loadFn) {
+  const days = ['Monday','Tuesday','Wednesday','Thursday','Friday'];
+  $(containerId).innerHTML = days.map(d =>
+    `<div class="day-tab ${d===activeDay?'active':''}" onclick="switchDay('${d}','${containerId}','${loadFn}')">${d}</div>`
+  ).join('');
+}
+async function switchDay(day, tabsId, loadFn) {
+  activeDay = day;
+  document.querySelectorAll(`#${tabsId} .day-tab`).forEach(t => t.classList.toggle('active', t.textContent===day));
+  if (loadFn === 'loadSchedSlots') await loadSchedSlots();
+  else await loadAttSlots();
+}
+async function loadSchedSlots() {
+  const c = $('sched-content'); if (!c) return;
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    let url = `/api/slots?day=${activeDay}`;
+    if (USER.role === 'faculty') url += `&faculty_id=${USER.id}`;
+    else if (USER.role === 'student') url += `&student_id=${USER.id}`;
+    const slots = await api('GET', url);
+    if (!slots.length) { c.innerHTML = '<div class="empty-state"><div class="esi">📭</div><h3>No classes on '+activeDay+'</h3></div>'; return; }
+    c.innerHTML = slots.map(s => `
+      <div class="slot-card" onclick="${USER.role==='faculty'?`openAttModal(${s.id},'${s.subject_name}','${s.start_time}')`:'void(0)'}">
+        <div class="slot-time">
+          <div class="slot-time-main">${timeLabel(s.start_time)}</div>
+          <div class="slot-time-end">${timeLabel(s.end_time)}</div>
+        </div>
+        <div class="slot-bar"></div>
+        <div class="slot-info">
+          <div class="slot-subject">${s.subject_name} <span class="badge badge-cyan" style="font-size:9px;margin-left:4px">${s.subject_code}</span></div>
+          <div class="slot-meta">${USER.role!=='faculty'?s.faculty_name+' · ':''}📍 ${s.room}</div>
+        </div>
+        ${USER.role==='faculty'?`<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openAttModal(${s.id},'${s.subject_name}','${s.start_time}')">📋 Attendance</button>`:''}
+      </div>`).join('');
+  } catch(e) { c.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+
+// ── TAKE ATTENDANCE (faculty) ─────────────────────────────────────────────
+async function renderAttendancePage() {
+  const el = $('page-attendance');
+  if (USER.role === 'faculty') {
+    el.innerHTML = `<div class="page-header"><div class="page-header-left">
+      <h2>📋 Take Attendance</h2><p>Select a class slot to mark attendance</p></div></div>
+      <div class="day-tabs" id="att-tabs"></div>
+      <div id="att-slot-list"></div>`;
+    buildDayTabs('att-tabs', 'loadAttSlots');
+    await loadAttSlots();
+  } else {
+    // Admin sees overview
+    el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+    try {
+      const data = await api('GET', '/api/attendance/admin/overview');
+      el.innerHTML = `<div class="page-header"><div class="page-header-left"><h2>📊 Attendance Report</h2><p>System-wide overview</p></div></div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-label">Sessions</div><div class="stat-val">${data.total_sessions}</div></div>
+        <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-label">Present</div><div class="stat-val" style="color:var(--green)">${data.total_present}</div></div>
+        <div class="stat-card"><div class="stat-icon">❌</div><div class="stat-label">Absent</div><div class="stat-val" style="color:var(--red)">${data.total_absent}</div></div>
+        <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Overall Rate</div><div class="stat-val" style="color:var(--accent)">${data.overall_percentage}%</div></div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;flex-wrap:wrap">
+        <div class="card"><div class="card-header"><div class="card-title">🎓 By Student</div></div><div class="card-body">
+          ${data.students.map(s=>`<div class="att-bar-row">
+            <div style="min-width:100px"><div style="font-weight:600;font-size:12px">${s.name}</div><div style="font-size:10px;color:var(--text2)">${s.student_no}</div></div>
+            <div class="att-bar-wrap"><div class="att-bar ${s.color}" style="width:${s.percentage}%"></div></div>
+            <div class="att-bar-pct" style="color:var(--${s.color==='green'?'green':s.color==='amber'?'amber':'red'})">${s.percentage}%</div>
+          </div>`).join('') || '<div class="empty-state" style="padding:20px"><p>No data yet</p></div>'}
+        </div></div>
+        <div class="card"><div class="card-header"><div class="card-title">📚 By Subject</div></div><div class="card-body">
+          ${data.subjects.map(s=>`<div class="att-bar-row">
+            <div class="att-bar-label">${s.subject}<br><span style="font-size:10px;color:var(--text2)">${s.code}</span></div>
+            <div class="att-bar-wrap"><div class="att-bar ${s.color}" style="width:${s.percentage}%"></div></div>
+            <div class="att-bar-pct" style="color:var(--${s.color==='green'?'green':s.color==='amber'?'amber':'red'})">${s.percentage}%</div>
+          </div>`).join('') || '<div class="empty-state" style="padding:20px"><p>No data yet</p></div>'}
+        </div></div>
+      </div>`;
+    } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+  }
+}
+
+async function loadAttSlots() {
+  const c = $('att-slot-list'); if (!c) return;
+  c.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const slots = await api('GET', `/api/slots?day=${activeDay}&faculty_id=${USER.id}`);
+    if (!slots.length) { c.innerHTML = '<div class="empty-state"><div class="esi">📭</div><h3>No classes on '+activeDay+'</h3></div>'; return; }
+    c.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:13px">
+      ${slots.map(s=>`<div class="card" style="margin-bottom:0;cursor:pointer;transition:border-color .2s"
+        onmouseenter="this.style.borderColor='var(--accent)'" onmouseleave="this.style.borderColor='var(--border)'"
+        onclick="openAttModal(${s.id},'${s.subject_name}','${s.start_time}')">
+        <div class="card-body" style="padding:17px">
+          <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;margin-bottom:5px;color:var(--text)">${s.subject_name}</div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:4px"><span class="badge badge-cyan" style="font-size:10px">${s.subject_code}</span></div>
+          <div style="font-size:12px;color:var(--text2);margin-bottom:12px">🕐 ${timeLabel(s.start_time)}–${timeLabel(s.end_time)} · 📍 ${s.room}</div>
+          <button class="btn btn-primary btn-sm w-full">📋 Take Attendance</button>
+        </div>
+      </div>`).join('')}
+    </div>`;
+  } catch(e) { c.innerHTML = `<p style="color:var(--text2)">${e.message}</p>`; }
+}
+
+// ── ATTENDANCE MODAL ──────────────────────────────────────────────────────
+async function openAttModal(slotId, subject, time) {
+  attSlotId = slotId; attDate = todayStr(); attRecords = {}; attDone = false;
+  $('att-title').textContent = '📋 ' + subject;
+  $('att-sub').textContent = activeDay + ' · ' + timeLabel(time) + ' · ' + attDate;
+  $('att-done').style.display = 'none';
+  $('att-submit-btn').style.display = 'inline-flex';
+  $('att-list').innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  openModal('ov-att');
+  try {
+    const data = await api('GET', `/api/attendance/slot-students/${slotId}?date=${attDate}`);
+    attDone = data.already_submitted;
+    if (attDone) {
+      $('att-done').style.display = 'block';
+      $('att-submit-btn').style.display = 'none';
+      data.students.forEach(s => { attRecords[s.student_id] = s.status || 'present'; });
+    } else {
+      data.students.forEach(s => { attRecords[s.student_id] = 'present'; });
+    }
+    renderAttList(data.students);
+  } catch(e) { $('att-list').innerHTML = `<p style="color:var(--text2);padding:16px">${e.message}</p>`; }
+}
+
+function renderAttList(students) {
+  updateCount();
+  if (!students.length) {
+    $('att-list').innerHTML = '<div class="empty-state" style="padding:20px"><p>No students enrolled</p></div>';
+    return;
+  }
+  $('att-list').innerHTML = students.map(s => {
+    const st = attRecords[s.student_id] || 'present';
+    return `<div class="att-row ${st}" id="ar-${s.student_id}">
+      <div class="att-avatar" style="background:${s.avatar_color}">${initials(s.name)}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:13px;color:var(--text)">${s.name}</div>
+        <div style="font-size:11px;color:var(--text2)">${s.student_no||'—'}</div>
+      </div>
+      <div class="att-toggle">
+        <button class="att-btn p ${st==='present'?'on':''}" onclick="setAtt(${s.student_id},'present')" ${attDone?'disabled':''}>✅ Present</button>
+        <button class="att-btn a ${st==='absent'?'on':''}"  onclick="setAtt(${s.student_id},'absent')"  ${attDone?'disabled':''}>❌ Absent</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function setAtt(sid, status) {
+  if (attDone) return;
+  attRecords[sid] = status;
+  const row = $(`ar-${sid}`); if (!row) return;
+  row.className = 'att-row ' + status;
+  row.querySelectorAll('.att-btn').forEach(b => {
+    b.classList.toggle('on', b.classList.contains(status === 'present' ? 'p' : 'a'));
+  });
+  updateCount();
+}
+function updateCount() {
+  const vals = Object.values(attRecords);
+  $('att-p-count').textContent = vals.filter(v=>v==='present').length;
+  $('att-a-count').textContent = vals.filter(v=>v==='absent').length;
+}
+function markAll(status) {
+  if (attDone) return;
+  Object.keys(attRecords).forEach(sid => setAtt(+sid, status));
+}
+async function submitAttendance() {
+  const records = Object.entries(attRecords).map(([sid,status]) => ({student_id:+sid,status}));
+  if (!records.length) { toast('No students to mark','warning'); return; }
+  try {
+    const res = await api('POST', '/api/attendance/submit', {
+      slot_id: attSlotId, faculty_id: USER.id, date: attDate, records
+    });
+    toast(`✅ Submitted! ${res.present} present, ${res.absent} absent. ${res.alerts_sent} absent alerts sent.`, 'success');
+    closeModal('ov-att');
+    loadNotifications();
+    if ($('page-attendance').classList.contains('active')) await renderAttendancePage();
+  } catch(e) { toast(e.message, 'error'); }
+}
+
+// ── MY ATTENDANCE (student) ───────────────────────────────────────────────
+async function renderMyAtt() {
+  const el = $('page-my-att');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const data = await api('GET', `/api/attendance/student/${USER.id}`);
+    const avg = data.length ? Math.round(data.reduce((a,b)=>a+b.percentage,0)/data.length) : 0;
+    const low = data.filter(s => s.percentage < 75);
+    const avgColor = avg>=75?'var(--green)':avg>=60?'var(--amber)':'var(--red)';
+    el.innerHTML = `<div class="page-header"><div class="page-header-left"><h2>📊 My Attendance</h2><p>Your attendance across all subjects</p></div></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">📈</div><div class="stat-label">Overall Average</div><div class="stat-val" style="color:${avgColor}">${avg}%</div></div>
+      <div class="stat-card"><div class="stat-icon">📚</div><div class="stat-label">Subjects</div><div class="stat-val">${data.length}</div></div>
+      <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">Below 75%</div><div class="stat-val" style="color:${low.length?'var(--red)':'var(--green)'}">${low.length}</div></div>
+    </div>
+    ${low.length
+      ? `<div class="att-warning"><span style="font-size:18px;flex-shrink:0">🚨</span><div><strong>Attendance Alert!</strong> You are below 75% in: <strong>${low.map(s=>s.subject).join(', ')}</strong>. This may affect your exam eligibility.</div></div>`
+      : '<div class="att-good">✅ Excellent! You are above the 75% attendance requirement in all subjects.</div>'}
+    <div class="card"><div class="card-header"><div class="card-title">Subject-wise Breakdown</div></div><div class="card-body">
+      ${!data.length ? '<div class="empty-state" style="padding:20px"><div class="esi">📋</div><p>No attendance recorded yet</p></div>' :
+        data.map(s => `<div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div>
+              <div style="font-weight:700;font-size:13px;color:var(--text)">${s.subject} <span class="badge badge-cyan" style="font-size:9px">${s.code}</span></div>
+              <div style="font-size:11px;color:var(--text2);margin-top:2px">${s.faculty} · ${s.present}/${s.total} classes attended</div>
+            </div>
+            <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:var(--${s.color==='green'?'green':s.color==='amber'?'amber':'red'})">${s.percentage}%</div>
+          </div>
+          <div class="att-bar-wrap" style="height:9px;margin-bottom:9px"><div class="att-bar ${s.color}" style="width:${s.percentage}%"></div></div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap">
+            ${s.history.slice(-12).map(h=>`<div style="text-align:center">
+              <div style="width:26px;height:26px;border-radius:6px;background:${h.status==='present'?'rgba(16,185,129,.15)':'rgba(239,68,68,.12)'};display:flex;align-items:center;justify-content:center;font-size:11px">${h.status==='present'?'✅':'❌'}</div>
+              <div style="font-size:9px;color:var(--text3);margin-top:2px">${h.date.slice(5)}</div>
+            </div>`).join('')}
+          </div>
+        </div>`).join('')}
+    </div></div>`;
+  } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+
+// ── AI PATTERNS ───────────────────────────────────────────────────────────
+async function renderAI() {
+  const el = $('page-ai');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const alerts = await api('GET', '/api/ai/patterns');
+    el.innerHTML = `<div class="page-header"><div class="page-header-left">
+      <h2>🤖 AI Pattern Detection</h2>
+      <p>Students with 3+ consecutive absences — auto-detected by the system</p></div>
+      <button class="btn btn-primary btn-sm" onclick="renderAI()">🔄 Re-scan</button>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">⚠️</div><div class="stat-label">At-Risk Cases</div><div class="stat-val" style="color:${alerts.length?'var(--red)':'var(--green)'}">${alerts.length}</div></div>
+      <div class="stat-card"><div class="stat-icon">🔴</div><div class="stat-label">High Risk (5+)</div><div class="stat-val" style="color:var(--red)">${alerts.filter(a=>a.risk_level==='High').length}</div></div>
+      <div class="stat-card"><div class="stat-icon">🟡</div><div class="stat-label">Medium Risk (3-4)</div><div class="stat-val" style="color:var(--amber)">${alerts.filter(a=>a.risk_level==='Medium').length}</div></div>
+    </div>
+    ${!alerts.length
+      ? '<div class="empty-state"><div class="esi">✅</div><h3>No patterns detected</h3><p>All students have consistent attendance.</p></div>'
+      : `<div class="card"><div class="card-header"><div class="card-title">⚠️ Detected Patterns</div></div><div class="card-body" style="padding:14px">
+          ${alerts.map(a=>`<div class="pattern-card ${a.risk_level==='High'?'high':''}">
+            <div class="pattern-top">
+              <div class="att-avatar" style="background:${a.avatar_color};width:38px;height:38px;font-size:13px">${initials(a.student_name)}</div>
+              <div style="flex:1">
+                <div style="font-weight:700;font-size:13px;color:var(--text)">${a.student_name} <span class="badge badge-${a.risk_level==='High'?'red':'amber'}">${a.risk_level} Risk</span></div>
+                <div style="font-size:11px;color:var(--text2);margin-top:2px">${a.student_no} · ${a.subject} (${a.code})</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div class="pattern-streak ${a.risk_level==='High'?'high':'med'}">${a.max_streak}</div>
+                <div style="font-size:10px;color:var(--text2)">consecutive</div>
+                <div style="font-size:10px;color:var(--text2)">absences</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;font-size:12px;margin-top:4px">
+              <span>📊 Attendance: <strong style="color:var(--${a.color==='green'?'green':a.color==='amber'?'amber':'red'})">${a.percentage}%</strong></span>
+              <span>✅ Present: <strong style="color:var(--green)">${a.present}</strong></span>
+              <span>❌ Absent: <strong style="color:var(--red)">${a.absent}</strong></span>
+            </div>
+            <div class="att-bar-wrap" style="margin-top:9px;height:7px">
+              <div class="att-bar ${a.color}" style="width:${a.percentage}%"></div>
+            </div>
+          </div>`).join('')}
+        </div></div>`}`;
+  } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+
+// ── PARENT LOG (admin) ────────────────────────────────────────────────────
+async function renderParentLog() {
+  const el = $('page-parent-log');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const notifs = await api('GET', `/api/notifications?user_id=${USER.id}&role=admin`);
+    const parentAlerts = notifs.filter(n => n.title.startsWith('Parent Alert'));
+    el.innerHTML = `<div class="page-header"><div class="page-header-left">
+      <h2>👪 Parent Alerts Log</h2>
+      <p>Simulated SMS/Email notifications sent to parents of absent students</p></div></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-icon">📨</div><div class="stat-label">Total Alerts</div><div class="stat-val">${parentAlerts.length}</div></div>
+      <div class="stat-card"><div class="stat-icon">🔔</div><div class="stat-label">Unread</div><div class="stat-val" style="color:var(--amber)">${parentAlerts.filter(n=>!n.is_read).length}</div></div>
+    </div>
+    ${!parentAlerts.length
+      ? '<div class="empty-state"><div class="esi">👪</div><h3>No parent alerts yet</h3><p>Alerts appear here when faculty mark students as absent.</p></div>'
+      : `<div class="card"><div class="card-header"><div class="card-title">📨 Simulated Parent Notifications</div>
+          <button class="btn btn-outline btn-sm" onclick="readAllNotifs()">Mark all read</button></div>
+          <div class="card-body" style="padding:0">
+          ${parentAlerts.map(n=>`<div class="notif-item ${n.is_read?'':'unread'}" onclick="readNotif(${n.id});this.classList.remove('unread')" style="padding:14px 18px">
+            ${!n.is_read?'<div class="notif-dot" style="margin-top:5px"></div>':'<div style="width:6px"></div>'}
+            <div style="flex:1">
+              <div class="notif-title" style="font-size:13px">📱 ${n.title}</div>
+              <div class="notif-msg" style="font-size:12px;margin-top:4px">${n.message}</div>
+              <div class="notif-time" style="margin-top:5px">${fmtDate(n.created_at)}</div>
+            </div>
+          </div>`).join('')}
+          </div></div>`}`;
+  } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+
+// ── ADMIN MANAGEMENT PAGES ────────────────────────────────────────────────
+async function renderStudents() {
+  const el = $('page-students');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const [students, attOv] = await Promise.all([
+      api('GET', '/api/users?role=student'),
+      api('GET', '/api/attendance/admin/overview')
+    ]);
+    const attMap = {};
+    attOv.students.forEach(s => { attMap[s.student_no] = s; });
+    el.innerHTML = `<div class="page-header"><div class="page-header-left"><h2>🎓 Students</h2><p>${students.length} enrolled students</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Student</th><th>ID</th><th>Email</th><th>Attendance</th></tr></thead><tbody>
+    ${students.map(s=>{
+      const att = attMap[s.student_id];
+      return `<tr>
+        <td><div style="display:flex;align-items:center;gap:9px">
+          <div style="width:30px;height:30px;border-radius:50%;background:${s.avatar_color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;flex-shrink:0">${initials(s.name)}</div>
+          <div style="font-weight:600">${s.name}</div></div></td>
+        <td><span class="badge badge-cyan">${s.student_id||'—'}</span></td>
+        <td style="color:var(--text2)">${s.email}</td>
+        <td>${att?`<span class="badge badge-${att.percentage>=75?'green':att.percentage>=60?'amber':'red'}">${att.percentage}%</span>`:'<span class="badge badge-blue">No data</span>'}</td>
+      </tr>`;}).join('')}
+    </tbody></table></div>`;
+  } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+
+async function renderFaculty() {
+  const el = $('page-faculty');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const faculty = await api('GET', '/api/users?role=faculty');
+    el.innerHTML = `<div class="page-header"><div class="page-header-left"><h2>👨‍🏫 Faculty</h2><p>${faculty.length} teaching staff</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Name</th><th>Department</th><th>Email</th></tr></thead><tbody>
+    ${faculty.map(f=>`<tr>
+      <td><div style="display:flex;align-items:center;gap:9px">
+        <div style="width:30px;height:30px;border-radius:50%;background:${f.avatar_color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff">${initials(f.name)}</div>
+        <div style="font-weight:600">${f.name}</div></div></td>
+      <td>${f.department||'—'}</td>
+      <td style="color:var(--text2)">${f.email}</td>
+    </tr>`).join('')}
+    </tbody></table></div>`;
+  } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+
+async function renderSubjects() {
+  const el = $('page-subjects');
+  el.innerHTML = '<div class="loading"><div class="spinner"></div></div>';
+  try {
+    const [subjects, attOv] = await Promise.all([
+      api('GET', '/api/subjects'),
+      api('GET', '/api/attendance/admin/overview')
+    ]);
+    const attMap = {};
+    attOv.subjects.forEach(s => { attMap[s.subject] = s; });
+    el.innerHTML = `<div class="page-header"><div class="page-header-left"><h2>📚 Subjects</h2><p>${subjects.length} active subjects</p></div></div>
+    <div class="table-wrap"><table><thead><tr><th>Subject</th><th>Code</th><th>Faculty</th><th>Section</th><th>Semester</th><th>Attendance</th></tr></thead><tbody>
+    ${subjects.map(s=>{
+      const att = attMap[s.name];
+      return `<tr>
+        <td><strong>${s.name}</strong></td>
+        <td><span class="badge badge-cyan">${s.code}</span></td>
+        <td>${s.faculty_name}</td>
+        <td><span class="badge badge-purple">Sec ${s.section}</span></td>
+        <td>${s.semester}</td>
+        <td>${att?`<div class="att-bar-wrap" style="width:80px;display:inline-block;vertical-align:middle;margin-right:6px"><div class="att-bar ${att.color}" style="width:${att.percentage}%"></div></div><span style="font-family:'Syne',sans-serif;font-weight:700;color:var(--${att.color==='green'?'green':att.color==='amber'?'amber':'red'})">${att.percentage}%</span>`:'<span class="badge badge-blue">No data</span>'}</td>
+      </tr>`;}).join('')}
+    </tbody></table></div>`;
+  } catch(e) { el.innerHTML = `<p style="color:var(--text2);padding:20px">${e.message}</p>`; }
+}
+</script>
+</body>
+</html>
